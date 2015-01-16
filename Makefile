@@ -1,25 +1,53 @@
+# -- Paths ---------------
+FRONT_END_PATH = front-end
+
+SRC_PATH = src
+PARSER_PATH = parser
+LEXER_PATH = lexer
+INC_PATH = include
+OBJ_PATH = obj
+EXE_PATH = exe
+
+FILE = SyntaxTree.cpp SimpleC_gram.cpp SimpleC_lex.cpp
+
+# -- Macros -------------
 CXX = g++
-CXXFLAGS = -Wall -Winline -fmessage-length=0 -ggdb -fno-inline
 
-all : my_comp
+# -- Flags --------------
+CXX_INC_FLAGS = -I$(FRONT_END_PATH)/$(INC_PATH)
+C_CXX_FLAGS = -Wall -Winline -fmessage-length=0 -ggdb -fno-inline
+CXXFLAGS = $(C_CXX_FLAGS) $(CXX_INC_FLAGS) $(LIB_INC_PATH)
 
-my_comp : SyntaxTree.o SimpleC_gram.o SimpleC_lex.o
-	$(CXX) -o my_comp $(CXXFLAGS) SyntaxTree.o SimpleC_gram.o SimpleC_lex.o -lfl
+# -- Libraries ---------
+LIBS = -ll
 
-SyntaxTree.o : SyntaxTree.cpp SyntaxTree.h Algorithms.h
-	$(CXX) -c -o SyntaxTree.o $(CXXFLAGS) SyntaxTree.cpp
+PRODUCT = feather
 
-SimpleC_gram.o : SimpleC_gram.cpp SyntaxTree.h
-	$(CXX) -c -o SimpleC_gram.o $(CXXFLAGS) SimpleC_gram.cpp
+SRC = $(addprefix ${SRC_PATH}/, $(FILE))
+OBJ = $(addprefix ${OBJ_PATH}/, $(addsuffix .o, $(basename $(FILE))))
 
-SimpleC_lex.o : SimpleC_lex.cpp SyntaxTree.h
-	$(CXX) -c -o SimpleC_lex.o $(CXXFLAGS) SimpleC_lex.cpp
+# -- Rules --------------
+$(EXE_PATH)/$(PRODUCT): $(OBJ)
+	@mkdir -p $(EXE_PATH)
+	$(CXX) -o $@ $^ $(INC) $(LIBS)
+	@echo "Done..."
 
-SimpleC_gram.cpp : SimpleC.yy
-	bison --debug -o SimpleC_gram.cpp SimpleC.yy
+$(OBJ_PATH)/%.o: $(FRONT_END_PATH)/$(SRC_PATH)/%.cpp
+	@mkdir -p $(OBJ_PATH)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-SimpleC_lex.cpp : SimpleC.lex
-	flex -oSimpleC_lex.cpp SimpleC.lex
+$(OBJ_PATH)/%.o: $(FRONT_END_PATH)/$(SRC_PATH)/%.cpp
+	@mkdir -p $(OBJ_PATH)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(FRONT_END_PATH)/$(SRC_PATH)/%_gram.cpp: $(FRONT_END_PATH)/$(PARSER_PATH)/%.yy
+	bison --debug -o $@ $<
+
+$(FRONT_END_PATH)/$(SRC_PATH)/%_lex.cpp: $(FRONT_END_PATH)/$(LEXER_PATH)/%.lex
+	flex -o $@ $<
 
 clean :
-	rm my_comp *.o SimpleC_gram.cpp SimpleC_lex.cpp
+	rm -rf $(OBJ)
+	rm -rf $(EXE_PATH)/$(PRODUCT)
+	rm -f $(FRONT_END_PATH)/$(SRC_PATH)/*_gram.cpp $(FRONT_END_PATH)/$(SRC_PATH)/*_lex.cpp
+	@echo "Clean done..."

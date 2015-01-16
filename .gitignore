@@ -87,3 +87,10 @@ Temporary Items
 
 # PDF
 *.pdf
+
+# Executable file
+feather
+
+# Parsed and lexed source files
+*_gram.cpp
+*_lex.cpp
