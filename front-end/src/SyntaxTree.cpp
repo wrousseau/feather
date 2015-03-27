@@ -331,6 +331,86 @@ void ExpressionInstruction::handle(VirtualTask& vtTask, WorkList& continuations,
       m_expression->handle(vtTask, continuations, reuse);
     }
   }
+  else if (type == TTRenaming)
+  {
+    if (m_expression.get())
+    {
+      m_expression->handle(vtTask, continuations, reuse);
+    }
+    assert(dynamic_cast<RenamingTask*>(&vtTask));
+    RenamingTask& task = (RenamingTask&) vtTask;
+    if (task.m_localRename)
+    {
+      if (task.m_localReplace)
+      {
+        std::set<RenamingTask::VariableRenaming>::iterator found = task.m_renamings.find(RenamingTask::VariableRenaming(*task.m_localReplace, task.m_function));
+        if (found != task.m_renamings.end())
+        {
+          const_cast<RenamingTask::VariableRenaming&>(*found).setNewValue(new LocalVariableExpression(*task.m_localRename), task.m_previousLabel ? task.m_previousLabel : (task.m_lastBranch ? task.m_lastBranch->getSPreviousInstruction() : NULL));
+          delete task.m_localReplace;
+          task.m_localReplace = NULL;
+        }
+        else
+        {
+          assert(!task.m_lastBranch || dynamic_cast<IfInstruction*>(task.m_lastBranch->getSPreviousInstruction()));
+          task.m_renamings.insert(RenamingTask::VariableRenaming(task.m_localReplace, new LocalVariableExpression(*task.m_localRename), task.m_function, task.m_previousLabel ? task.m_previousLabel : (task.m_lastBranch ? task.m_lastBranch->getSPreviousInstruction() : NULL)));
+          task.m_localReplace = NULL;
+        }
+      }
+      task.m_localRename->scope().setSSADefinition(task.m_localRename->getLocalScope(), *this);
+      task.m_localRename = NULL;
+    }
+    if (task.m_previousLabel)
+    {
+      bool isLast = true;
+      if (getSNextInstruction() && getSNextInstruction()->type() == TExpression)
+      {
+        assert(dynamic_cast<const ExpressionInstruction*>(getSNextInstruction()));
+        if (((const ExpressionInstruction&) *getSNextInstruction()).isPhi())
+        {
+          isLast = false;
+          if (task.m_isOnlyPhi)
+          {
+            VirtualInstruction::handle(task, continuations, reuse);
+          }
+        }
+      }
+      if (isLast)
+      {
+        assert(dynamic_cast<const LabelInstruction*>(task.m_previousLabel->getSNextInstruction()));
+        VirtualInstruction* dominator = ((LabelInstruction*) task.m_previousLabel->getSNextInstruction())->getSDominator();
+        assert(dominator);
+        std::set<RenamingTask::VariableRenaming>::iterator iter = task.m_renamings.begin();
+        while (iter != task.m_renamings.end())
+        {
+          if (!const_cast<RenamingTask::VariableRenaming&>(*iter).setDominator(*dominator, task.m_previousLabel))
+          {
+            std::set<RenamingTask::VariableRenaming>::iterator nextIter(iter);
+            ++nextIter;
+            const RenamingTask::VariableRenaming* next = (nextIter != task.m_renamings.end()) ? &(*nextIter) : NULL;
+            task.m_renamings.erase(iter);
+            if (next)
+            {
+              iter = task.m_renamings.find(*next);
+            }
+            else
+            {
+              iter = task.m_renamings.end();
+            }
+          }
+          else
+          {
+            ++iter;
+          }
+        }
+        task.m_previousLabel = NULL;
+      }
+      if (task.m_isOnlyPhi)
+      {
+        return;
+      }
+    }
+  }
   VirtualInstruction::handle(vtTask, continuations, reuse);
 }
 
