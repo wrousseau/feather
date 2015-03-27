@@ -125,6 +125,37 @@ void AssignExpression::handle(VirtualTask& vtTask, WorkList& continuations, Reus
   }
 }
 
+void PhiExpression::print(std::ostream& out) const
+{
+  out << "phi(";
+  if (m_fst.get())
+  {
+    m_fst->print(out);
+    if (m_fstFrom)
+    {
+      out << ' ' << m_fstFrom->getRegistrationIndex();
+    }
+  }
+  else
+  {
+    out << "no-expr";
+  }
+  out << ", ";
+  if (m_snd.get())
+  {
+    m_snd->print(out);
+    if (m_sndFrom)
+    {
+      out << ' ' << m_sndFrom->getRegistrationIndex();
+    }
+  }
+  else
+  {
+    out << "no-expr";
+  }
+  out << ')';
+}
+
 void
 FunctionCallExpression::print(std::ostream& out) const {
   if (m_function)

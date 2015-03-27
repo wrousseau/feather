@@ -275,7 +275,7 @@ public:
 };
 
 /*******************************/
-/* D�finitions des expressions */
+/* Définitions des expressions */
 /*******************************/
 
 class VirtualExpression {
@@ -283,7 +283,7 @@ public:
   enum Type
   {  TUndefined, TConstant, TChar, TString, TLocalVariable, TParameter, TGlobalVariable,
     TComparison, TUnaryOperator, TBinaryOperator, TDereference, TCast, TFunctionCall,
-    TAssign
+    TAssign, TPhi
   };
   typedef WorkList::Reusability Reusability;
 
@@ -652,6 +652,43 @@ public:
   }
   virtual std::auto_ptr<VirtualType> newType(Function* function) const
   {  return m_lvalue->newType(function); }
+};
+
+class GotoInstruction;
+class PhiExpression : public VirtualExpression
+{
+private:
+  std::auto_ptr<VirtualExpression> m_fst;
+  GotoInstruction* m_fstFrom;
+  std::auto_ptr<VirtualExpression> m_snd;
+  GotoInstruction* m_sndFrom;
+public:
+  PhiExpression() : m_fstFrom(NULL), m_sndFrom(NULL)
+  {
+    setType(TPhi);
+  }
+
+  PhiExpression& addReference(VirtualExpression* expression, GotoInstruction& gotoInstruction)
+  {
+    if (m_fst.get())
+    {
+      assert(!m_snd.get());
+      m_snd.reset(expression);
+      m_sndFrom = &gotoInstruction;
+    }
+    else
+    {
+      m_fst.reset(expression);
+      m_fstFrom = &gotoInstruction;
+    }
+    return *this;
+  }
+
+  virtual void print(std::ostream& out) const;
+  virtual std::auto_ptr<VirtualType> newType(Function* function) const
+  {
+    return m_fst.get() ? m_fst->newType(function) : m_snd->newType(function);
+  }
 };
 
 /*******************************/
