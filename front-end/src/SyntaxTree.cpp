@@ -286,6 +286,12 @@ void LabelInstruction::handle(VirtualTask& vtTask, WorkList& continuations, Reus
     assert(dynamic_cast<const PhiInsertionTask*>(&vtTask));
     ((PhiInsertionTask&) vtTask).m_dominationFrontier = &m_dominationFrontier;
   }
+  else if (type == TTLabelPhiFrontier)
+  {
+    assert(dynamic_cast<const LabelPhiFrontierTask*>(&vtTask) && dynamic_cast<const LabelPhiFrontierAgenda*>(&continuations));
+    ((LabelPhiFrontierAgenda&) continuations).propagateOn(*this, ((LabelPhiFrontierTask&) vtTask).m_modified);
+    return;
+  }
   VirtualInstruction::handle(vtTask, continuations, reuse);
 }
 
