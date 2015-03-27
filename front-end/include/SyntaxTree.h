@@ -598,7 +598,7 @@ public:
 
   AssignExpression& setLValue(VirtualExpression* lvalue) { m_lvalue.reset(lvalue); return *this; }
   AssignExpression& setRValue(VirtualExpression* rvalue) { m_rvalue.reset(rvalue); return *this; }
-
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   virtual void print(std::ostream& out) const
   {  if (m_lvalue.get())
     m_lvalue->print(out);

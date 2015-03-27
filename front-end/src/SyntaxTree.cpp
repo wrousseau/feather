@@ -112,6 +112,19 @@ void LocalVariableExpression::handle(VirtualTask &vtTask, WorkList& continuation
   }
 }
 
+void AssignExpression:handle(VirtualTask& vtTask, WorkList& continuations, Reusability& reuse)
+{
+  int type = vtTask.getType();
+  if (type == TTPhiInsertion && m_lvalue.get())
+  {
+    assert(dynamic_cast<const PhiInserionTask*>(&vtTask));
+    PhiInsertionTask& task = (PhiInserionTask&) vtTask;
+    task.m_isLValue = true;
+    m_lvalue->handle(task, continuations, reuse);
+    task.m_isLValue = false;
+  }
+}
+
 void
 FunctionCallExpression::print(std::ostream& out) const {
   if (m_function)
