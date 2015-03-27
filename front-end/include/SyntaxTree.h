@@ -416,6 +416,10 @@ public:
   int getLocalScope() const { return m_localIndex; }
   int getFunctionIndex(Function& function) const;
   int getGlobalIndex() const { return m_scope.getFunctionIndex(m_localIndex); }
+  Scope& scope()
+  {
+    return m_scope;
+  }
   virtual std::auto_ptr<VirtualType> newType(Function* function) const
   {  return std::auto_ptr<VirtualType>(m_scope.getType(m_localIndex).clone()); }
 };
