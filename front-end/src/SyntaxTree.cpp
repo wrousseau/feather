@@ -693,6 +693,10 @@ EnterBlockInstruction::handle(VirtualTask& virtualTask, WorkList& continuations,
     assert(dynamic_cast<const PhiInsertionTask*>(&virtualTask));
     ((PhiInsertionTask&) virtualTask).m_scope = m_scope;
   }
+  else if (type == TTRenaming)
+  {
+    m_scope.setSizeDefinitions();
+  }
 }
 
 void
