@@ -208,3 +208,29 @@ Comparison RenamingTask::VariableRenaming::compare(const VariableRenaming& sourc
   }
   return (m_toReplace->type() < source.m_toReplace->type()) ? CGreater : CLess;
 }
+
+bool RenamingTask::VariableRenaming::setDominator(VirtualInstruction& dominator, GotoInstruction* previousLabel)
+{
+  assert(m_lastDominator || !m_parent.get());
+  if (m_lastDominator && m_lastDominator->getDominationHeight() >= dominator.getDominationHeight())
+  {
+    if (m_newValue && m_lastDominator != previousLabel)
+    {
+      delete m_newValue;
+      m_newValue = NULL;
+    }
+    m_lastDominator = &dominator;
+    while (m_parent.get() && m_parent->m_lastDominator && m_parent->m_lastDominator->getDominationHeight() >= dominator.getDominationHeight())
+    {
+      m_parent = m_parent->m_parent;
+    }
+  }
+  else if (m_newValue)
+  {
+    std::shared_ptr<VariableRenaming> newParent(new VariableRenaming(*this, Transfert()));
+    newParent->m_parent = m_parent;
+    m_parent = newParent;
+  }
+  m_lastDominator = &dominator;
+  return m_newValue || m_parent.get();
+}
