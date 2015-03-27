@@ -154,6 +154,30 @@ void ExpressionInstruction::handle(VirtualTask& vtTask, WorkList& continuations,
   VirtualInstruction::handle(vtTask, continuations, reuse);
 }
 
+void GotoInstruction::handle(VirtualTask& vtTask, WorkList& continutations, Reusability& reuse)
+{
+  int type = vtTask.getType();
+  if ((type == TTPhiInsertion) && ((m_context == CAfterIfThen) || (m_context == CAfterIfElse)))
+  {
+    assert(dynamic_cast<const PhiInsertionTask*>(&vtTask));
+    PhiInsertionTask& task = (PhiInsertionTask&) vtTask;
+    task.m_dominationFrontier = &(this->getDominationFrontier());
+    if (getSPreviousInstruction() && getSPreviousInstruction()->type() == TIf)
+    {
+      for (std::vector<GotoInstruction*>::const_iterator labelIter = task.m_dominationFrontier->begin(); labelIter != task.m_dominationFrontier->end(); ++labelIter)
+      {
+        LabelInstruction& label = (LabelInstruction&) *(*labelIter)->getSNextInstruction();
+        if (!label.mark)
+        {
+          label.mark = new PhiInsertionTask::LabelResult();
+        }
+        ((PhiInsertionTask::LabelResult*) label.mark)->variablesToAdd().insert(task.m_modified.begin(), task.m_modified.end());
+      }
+    }
+  }
+  VirtualInstruction::handle(vtTask, continutations, reuse);
+}
+
 void
 VirtualInstruction::handle(VirtualTask& task, WorkList& continuations, Reusability& reuse) {
   task.applyOn(*this, continuations);

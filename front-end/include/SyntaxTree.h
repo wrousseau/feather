@@ -751,6 +751,7 @@ public:
   void setLoop() { assert(m_context == CUndefined); m_context = CLoop; }
   void setBeforeLabel() { assert(m_context == CUndefined); m_context = CBeforeLabel; }
   void connectToLabel(LabelInstruction& liInstruction);
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   virtual bool propagateOnUnmarked(VirtualTask& task, WorkList& continuations, Reusability& reuse) const
   {  bool hasResult = VirtualInstruction::propagateOnUnmarked(task, continuations, reuse);
     if ((m_context >= CLoop) || !m_context)
