@@ -1240,6 +1240,7 @@ public:
   void computeDominators();
   void computeDominationFrontiers();
   void insertPhiFunctions();
+  void renameSSA();
   class ParseContext {
   private:
     friend int getTokenIdentifier(const char* szText);

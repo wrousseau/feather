@@ -865,6 +865,15 @@ void Program::insertPhiFunctions()
   }
 }
 
+void Program::renameSSA()
+{
+  for (std::set<Function>::const_iterator functionIter = m_functions.begin(); functionIter != m_functions.end(); ++functionIter)
+  {
+    RenamingAgenda renamingAgenda(*functionIter);
+    renamingAgenda.execute();
+  }
+}
+
 extern int yydebug;
 
 int main( int argc, char** argv ) {
