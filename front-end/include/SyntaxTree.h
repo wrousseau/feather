@@ -738,9 +738,10 @@ class LabelInstruction;
 class GotoInstruction : public VirtualInstruction {
 public:
   enum Context { CUndefined, CAfterIfThen, CAfterIfElse, CLoop, CBeforeLabel };
-
+  typedef std::vector<GotoInstruction*> DominationFrontier;
 private:
   Context m_context;
+  DominationFrontier m_dominationFrontier;
 
 public:
   GotoInstruction() : m_context(CUndefined) { setType(TGoto); }
@@ -755,6 +756,15 @@ public:
     reuse.setSorted();
     return hasResult;
   }
+  void addDominationFrontier(GotoInstruction& gotoInstruction);
+  DominationFrontier& getDominationFrontier()
+  {
+    return m_dominationFrontier;
+  }
+  const DominationFrontier& getDominationFronter() const
+  {
+    return m_dominationFrontier;
+  }
   virtual void print(std::ostream& out) const
   {  if (m_context == CLoop)
     out << "goto loop " << getSNextInstruction();
@@ -765,7 +775,15 @@ public:
     else if (m_context == CBeforeLabel)
     out << "goto label " << getSNextInstruction();
     else
-    out << "goto " << getSNextInstruction();
+    out << "goto " << std::hex << (int) getSNextInstruction() << std::dec;
+    if (!m_dominationFrontier.empty())
+    {
+      out << "\tdomination fronter = ";
+      for (DominationFrontier::const_iterator iter = m_dominationFrontier.begin(); iter != m_dominationFrontier.end(); ++iter)
+      {
+        out << ((*iter)->getSNextInstruction())->getRegistrationIndex();
+      }
+    }
     out << '\n';
   }
 };
@@ -796,9 +814,12 @@ IfInstruction::propagateOnUnmarked(VirtualTask& task, WorkList& continuations, R
 }
 
 class LabelInstruction : public VirtualInstruction {
+public:
+  typedef std::vector<GotoInstruction*> DominationFrontier;
 private:
   GotoInstruction* m_goto;
   VirtualInstruction* m_dominator;
+  DominationFrontier m_dominationFrontier;
 
 public:
   LabelInstruction() : m_goto(NULL), m_dominator(NULL) { setType(TLabel); }
@@ -819,13 +840,39 @@ public:
     {
       out << '\n';
     }
+    if (!m_dominationFrontier.empty())
+    {
+      out << "\tdomination frontier of label = ";
+      for (std::vector<GotoInstruction*>::const_iterator iter = m_dominationFrontier.begin(); iter != m_dominationFrontier.end(); ++iter)
+      {
+        out << (*iter)->getSNextInstruction()->getRegistrationIndex();
+      }
+      out << '\n';
+    }
   }
+  void addDominationFrontier(GotoInstruction& gotoInstruction)
+  {
+    m_dominationFrontier.push_back(&gotoInstruction);
+  }
+  DominationFrontier& getDominationFrontier()
+  {
+    return m_dominationFrontier;
+  }
+  const DominationFrontier& getDominationFrontier() const
+  {
+    return m_dominationFrontier;
+  }
+  friend class Function;
 };
 
 inline void
 GotoInstruction::connectToLabel(LabelInstruction& instruction)
 {  setNextTo(instruction); instruction.setGotoFrom(*this); }
 
+inline void GotoInstruction::addDominationFronter(GotoINstruction& gotoInstruction)
+{
+  m_dominationFrontier.push_back(&gotoInstruction);
+}
 
 class ReturnInstruction : public VirtualInstruction {
 private:
