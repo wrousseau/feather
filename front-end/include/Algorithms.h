@@ -3,7 +3,7 @@
 
 #include "SyntaxTree.h"
 
-enum TypeTask { TTUndefined, TTPrint, TTDomination, TTPhiInsertion, TTLabelPhiFrontier };
+enum TypeTask { TTUndefined, TTPrint, TTDomination, TTPhiInsertion, TTLabelPhiFrontier, TTRenaming };
 
 class PrintTask : public VirtualTask {
 public:
@@ -270,6 +270,173 @@ public:
   typedef PhiInsertionTask::LabelResult LabelResult;
   void propagate(const LabelInstruction& label);
   void propagateOn(const LabelInstruction& label, const std::set<VirtualExpression*, IsBefore>& originModified);
+};
+
+/* Tâche de renommage */
+
+class RenamingAgenda;
+class RenamingTask: public VirtualTask
+{
+public:
+  class VariableRenaming
+  {
+  private:
+    VirtualExpression* m_toReplace;
+    LocalVariableExpression* m_newValue;
+    Function* m_function;
+    VirtualInstruction* m_lastDominator;
+    std::shared_ptr<VariableRenaming> m_parent;
+  public:
+    VariableRenaming(VirtualExpression& locate, const Function& function) : m_toReplace(&locate), m_newValue(NULL), m_function(&const_cast<Function&>(function))
+    {
+
+    }
+    VariableRenaming(VirtualExpression* toReplace, LocalVariableExpression* newValue, const Function& function, VirtualInstruction* lastDominator) : m_toReplace(toReplace), m_newValue(newValue), m_function(&const_cast<Function&>(function)), m_lastDominator(lastDominator)
+    {
+
+    }
+    class Transfert
+    {
+
+    };
+    VariableRenaming(const VariableRenaming& source, Transfert) : m_toReplace(NULL), m_newValue(source.m_newValue), m_function(source.m_function), m_lastDominator(source.m_lastDominator)
+    {
+      const_cast<VariableRenaming&>(source).m_newValue = NULL;
+    }
+    VariableRenaming(const VariableRenaming& source) : m_toReplace(source.m_toReplace), m_newValue(source.m_newValue), m_function(source.m_function), m_lastDominator(source.m_lastDominator), m_parent(source.m_parent)
+    {
+
+    }
+    VariableRenaming& operator=(const VariableRenaming& source)
+    {
+      m_toReplace = source.m_toReplace;
+      m_newValue = source.m_newValue;
+      m_function = source.m_function;
+      m_lastDominator = source.m_lastDominator;
+      m_parent = source.m_parent;
+      return *this;
+    }
+    void cloneExpressions()
+    {
+      m_toReplace = m_toReplace->clone();
+      if (m_newValue)
+      {
+        m_newValue = (LocalVariableExpression*) m_newValue->clone();
+      }
+    }
+    Comparison compare(const VariableRenaming& source) const;
+    bool operator==(const VariableRenaming& source) const
+    {
+      return compare(source) == CEqual;
+    }
+    bool operator<(const VariableRenaming& source) const
+    {
+      return compare(source) == CLess;
+    }
+    bool operator>(const VariableRenaming& source) const
+    {
+      return compare(source) == CGreater;
+    }
+    bool operator<=(const VariableRenaming& source) const
+    {
+      Comparison result = compare(source);
+      return result == CLess || result == CEqual;
+    }
+    bool operator>=(const VariableRenaming& source) const
+    {
+      Comparison result = compare(source);
+      return result == CGreater || result == CEqual;
+    }
+    bool operator!=(const VariableRenaming& source) const
+    {
+      Comparison result = compare(source);
+      return result == CGreater || result == CLess;
+    }
+    void free()
+    {
+      if (m_toReplace)
+      {
+        delete m_toReplace;
+        m_toReplace = NULL;
+      }
+      if (m_newValue)
+      {
+        delete m_newValue;
+        m_newValue = NULL;
+      }
+    }
+    LocalVariableExpression& getNewValue() const
+    {
+      return m_newValue ? *m_newValue : *m_parent->m_newValue;
+    }
+    LocalVariableExpression* getSDominatorNewValue() const
+    {
+      return m_parent.get() ? m_parent->m_newValue : NULL;
+    }
+    void setNewValue(LocalVariableExpression* newValue, VirtualInstruction* lastDominator)
+    {
+      m_newValue = newValue;
+      m_lastDominator = lastDominator;
+    }
+    bool setDominator(VirtualInstruction& dominator, GotoInstruction* previousLabel=NULL);
+    friend class RenamingTask;
+  };
+
+public:
+  std::set<VariableRenaming> m_renamings;
+  bool m_isLValue; // attribut hérité
+  LocalVariableExpression* m_localRename; // attribut synthétisé
+  LocalVariableExpression* m_localReplace; // attribut synthétisé
+  const Function& m_function;
+  GotoInstruction* m_previousLabel;
+  GotoInstruction* m_lastBranch;
+  bool m_isOnlyPhi;
+
+private:
+  static std::set<VariableRenaming>* cloneRenamings(const std::set<VariableRenaming>& source)
+  {
+    std::set<VariableRenaming>* result = new std::set<VariableRenaming>(source);
+    for (std::set<VariableRenaming>::const_iterator iter = result->begin(); iter != result->end(); ++iter)
+    {
+      const_cast<VariableRenaming&>(*iter).cloneExpressions();
+    }
+    return result;
+  }
+  static void freeRenamings(std::set<VariableRenaming>& source)
+  {
+    for (std::set<VariableRenaming>::const_iterator iter = source.begin(); iter != source.end(); ++iter)
+    {
+      const_cast<VariableRenaming&>(*iter).free();
+    }
+    source.clear();
+  }
+
+public:
+  RenamingTask(const Function& function) : m_isLValue(false), m_localRename(NULL), m_localReplace(NULL), m_function(function), m_previousLabel(NULL), m_lastBranch(NULL), m_isOnlyPhi(false)
+  {
+    setInstruction(function.getFirstInstruction());
+  }
+  RenamingTask(const RenamingTask& source) : VirtualTask(source), m_renamings(source.m_renamings), m_isLValue(false), m_localRename(NULL), m_localReplace(NULL), m_function(source.m_function), m_previousLabel(source.m_previousLabel), m_lastBranch(source.m_lastBranch), m_isOnlyPhi(source.m_isOnlyPhi)
+  {
+    for (std::set<VariableRenaming>::const_iterator iter = m_renamings.begin(); iter != m_renamings.end(); ++iter)
+    {
+      const_cast<VariableRenaming&>(*iter).cloneExpressions();
+    }
+  }
+  virtual VirtualTask* clone() const
+  {
+    return new RenamingTask(*this);
+  }
+  virtual int getType() const
+  {
+    return TTRenaming;
+  }
+  virtual bool mergeWith(VirtualTask& source)
+  {
+    ((RenamingTask&) source).m_isOnlyPhi = true;
+    return false;
+  }
+  friend class RenamingAgenda;
 };
 
 inline void
