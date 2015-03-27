@@ -184,3 +184,27 @@ void LabelPhiFrontierAgenda::propagateOn(const LabelInstruction& label, const st
     }
   }
 }
+
+Comparison RenamingTask::VariableRenaming::compare(const VariableRenaming& source) const
+{
+  assert(m_function == source.m_function);
+  if (m_toReplace->type() == source.m_toReplace->type())
+  {
+    if (m_toReplace->type() == VirtualExpression::TLocalVariable)
+    {
+      assert(dynamic_cast<const LocalVariableExpression*>(m_toReplace) && dynamic_cast<const LocalVariableExpression*>(source.m_toReplace));
+      int thisIndex = ((const LocalVariableExpression&) *m_toReplace).getFunctionIndex(*m_function), sourceIndex = ((const LocalVariableExpression&) *source.m_toReplace).getFunctionIndex(*m_function);
+      return (thisIndex < sourceIndex) ? CLess : ((thisIndex > sourceIndex) ? CGreater : CEqual);
+    }
+    if (m_toReplace->type() == VirtualExpression::TParameter)
+    {
+      assert(dynamic_cast<const ParameterExpression*>(m_toReplace) && dynamic_cast<const ParameterExpression*>(source.m_toReplace));
+      int thisIndex = ((const ParameterExpression&) *m_toReplace).getIndex(), sourceIndex = ((const ParameterExpression&) *source.m_toReplace).getIndex();
+      return (thisIndex < sourceIndex) ? CLess : ((thisIndex > sourceIndex) ? CGreater : CEqual);
+    }
+    assert(dynamic_cast<const GlobalVariableExpression*>(m_toReplace) && dynamic_cast<const GlobalVariableExpression*>(source.m_toReplace));
+    int thisIndex = ((const GlobalVariableExpression&) *m_toReplace).getIndex(), sourceIndex = ((const GlobalVariableExpression&) *source.m_toReplace).getIndex();
+    return (thisIndex < sourceIndex) ? CLess : ((thisIndex > sourceIndex) ? CGreater : CEqual);
+  }
+  return (m_toReplace->type() < source.m_toReplace->type()) ? CGreater : CLess;
+}
