@@ -719,6 +719,17 @@ public:
   VirtualInstruction* getSPreviousInstruction() const { return m_previous; }
   void connectTo(VirtualInstruction& next)
   {  m_next = &next; next.m_previous = this; }
+  VirtualInstruction* disconnectNext()
+  {
+    VirtualInstruction* result = m_next;
+    if (m_next)
+    {
+      assert(m_next->m_previous == this);
+      m_next->m_previous = NULL;
+      m_next = NULL;
+    }
+    return result;
+  }
   virtual void print(std::ostream& out) const = 0;
   void clearMark() { mark = NULL; }
   bool isValid() const { return m_registrationIndex >= 0; }
@@ -805,15 +816,15 @@ public:
   virtual void print(std::ostream& out) const
   {
     if (m_context == CLoop)
-      out << "goto loop " << getSNextInstruction();
+    out << "goto loop " << getSNextInstruction();
     else if (m_context == CAfterIfThen)
-      out << "then";
+    out << "then";
     else if (m_context == CAfterIfElse)
-      out << "else";
+    out << "else";
     else if (m_context == CBeforeLabel)
-      out << "goto label " << getSNextInstruction();
+    out << "goto label " << getSNextInstruction();
     else
-      out << "goto " << std::hex << getSNextInstruction() << std::dec;
+    out << "goto " << std::hex << getSNextInstruction() << std::dec;
     if (!m_dominationFrontier.empty())
     {
       out << "\tdomination fronter = ";
@@ -1027,63 +1038,75 @@ public:
   }
 
   void print(std::ostream& out) const
-  {  out << "function " << m_name << '\n';
-  for (std::vector<VirtualInstruction*>::const_iterator iIter = m_instructions.begin();
-  iIter != m_instructions.end(); ++iIter)
-  (*iIter)->print(out);
-}
-bool operator<(const Function& source) const { return m_name < source.m_name; }
-bool operator<=(const Function& source) const { return m_name <= source.m_name; }
-bool operator>=(const Function& source) const { return m_name >= source.m_name; }
-bool operator>(const Function& source) const { return m_name > source.m_name; }
-bool operator==(const Function& source) const { return m_name == source.m_name; }
-bool operator!=(const Function& source) const { return m_name != source.m_name; }
-FunctionSignature& signature() { return m_signature; }
-const FunctionSignature& signature() const { return m_signature; }
-const std::string& getName() const { return m_name; }
-bool findParameters(const std::string& name, int& local) const
-{  return signature().findParameters(name, local); }
-VirtualInstruction& getFirstInstruction() const
-{  return *m_instructions[0]; }
+  {
+    out << "function " << m_name << '\n';
+    for (std::vector<VirtualInstruction*>::const_iterator iIter = m_instructions.begin();
+    iIter != m_instructions.end(); ++iIter)
+    (*iIter)->print(out);
+  }
+  bool operator<(const Function& source) const { return m_name < source.m_name; }
+  bool operator<=(const Function& source) const { return m_name <= source.m_name; }
+  bool operator>=(const Function& source) const { return m_name >= source.m_name; }
+  bool operator>(const Function& source) const { return m_name > source.m_name; }
+  bool operator==(const Function& source) const { return m_name == source.m_name; }
+  bool operator!=(const Function& source) const { return m_name != source.m_name; }
+  FunctionSignature& signature() { return m_signature; }
+  const FunctionSignature& signature() const { return m_signature; }
+  const std::string& getName() const { return m_name; }
+  bool findParameters(const std::string& name, int& local) const
+  {  return signature().findParameters(name, local); }
+  VirtualInstruction& getFirstInstruction() const
+  {  return *m_instructions[0]; }
 
-void addNewInstructionAfter(VirtualInstruction* newInstruction, VirtualInstruction& previous)
-{  newInstruction->setRegistrationIndex(m_instructions.size());
-  m_instructions.push_back(newInstruction);
-  previous.connectTo(*newInstruction);
-}
-void setDominationFrontier();
-void addFirstInstruction(VirtualInstruction* newInstruction)
-{  assert(m_instructions.empty());
-  newInstruction->setRegistrationIndex(0);
-  m_instructions.push_back(newInstruction);
-}
-void addNewInstruction(VirtualInstruction* newInstruction)
-{  newInstruction->setRegistrationIndex(m_instructions.size());
-  m_instructions.push_back(newInstruction);
-}
-GotoInstruction& setFirst()
-{  assert(m_instructions.empty());
-  GotoInstruction* result = new GotoInstruction();
-  result->setRegistrationIndex(m_instructions.size());
-  m_instructions.push_back(result);
-  return *result;
-}
-GotoInstruction& setThen(IfInstruction& ifInstruction)
-{  GotoInstruction* thenPoint = new GotoInstruction();
-  thenPoint->setRegistrationIndex(m_instructions.size());
-  m_instructions.push_back(thenPoint);
-  ifInstruction.connectToThen(*thenPoint);
-  return *thenPoint;
-}
-GotoInstruction& setElse(IfInstruction& ifInstruction)
-{  GotoInstruction* elsePoint = new GotoInstruction();
-  elsePoint->setRegistrationIndex(m_instructions.size());
-  m_instructions.push_back(elsePoint);
-  ifInstruction.connectToElse(*elsePoint);
-  return *elsePoint;
-}
-const VirtualType& getTypeGlobal(int uIndex) { return m_globalScope->getType(uIndex); }
-const Scope& globalScope() const { assert(m_globalScope); return *m_globalScope; }
+  void addNewInstructionAfter(VirtualInstruction* newInstruction, VirtualInstruction& previous)
+  {  newInstruction->setRegistrationIndex(m_instructions.size());
+    m_instructions.push_back(newInstruction);
+    previous.connectTo(*newInstruction);
+  }
+  void insertNewInstructionAfter(VirtualInstruction* newInstruction, VirtualInstruction& previous)
+  {
+    newInstruction->setRegistrationIndex(m_instructions.size());
+    m_instructions.push_back(newInstruction);
+    VirtualInstruction* next = previous.getSNextInstruction();
+    previous.connectTo(*newInstruction);
+    if (next)
+    {
+      newInstruction->connectTo(*next);
+    }
+  }
+  void setDominationFrontier();
+  void addFirstInstruction(VirtualInstruction* newInstruction)
+  {  assert(m_instructions.empty());
+    newInstruction->setRegistrationIndex(0);
+    m_instructions.push_back(newInstruction);
+  }
+  void addNewInstruction(VirtualInstruction* newInstruction)
+  {  newInstruction->setRegistrationIndex(m_instructions.size());
+    m_instructions.push_back(newInstruction);
+  }
+  GotoInstruction& setFirst()
+  {  assert(m_instructions.empty());
+    GotoInstruction* result = new GotoInstruction();
+    result->setRegistrationIndex(m_instructions.size());
+    m_instructions.push_back(result);
+    return *result;
+  }
+  GotoInstruction& setThen(IfInstruction& ifInstruction)
+  {  GotoInstruction* thenPoint = new GotoInstruction();
+    thenPoint->setRegistrationIndex(m_instructions.size());
+    m_instructions.push_back(thenPoint);
+    ifInstruction.connectToThen(*thenPoint);
+    return *thenPoint;
+  }
+  GotoInstruction& setElse(IfInstruction& ifInstruction)
+  {  GotoInstruction* elsePoint = new GotoInstruction();
+    elsePoint->setRegistrationIndex(m_instructions.size());
+    m_instructions.push_back(elsePoint);
+    ifInstruction.connectToElse(*elsePoint);
+    return *elsePoint;
+  }
+  const VirtualType& getTypeGlobal(int uIndex) { return m_globalScope->getType(uIndex); }
+  const Scope& globalScope() const { assert(m_globalScope); return *m_globalScope; }
 };
 
 inline int
