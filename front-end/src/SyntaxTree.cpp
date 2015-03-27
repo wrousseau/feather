@@ -123,6 +123,31 @@ void LocalVariableExpression::handle(VirtualTask &vtTask, WorkList& continuation
       }
     }
   }
+  else if (type == TTRenaming)
+  {
+    assert(dynamic_cast<const RenamingTask*>(&vtTask) && dynamic_cast<const RenamingAgenda*>(&continuations));
+    RenamingTask& task = (RenamingTask&) vtTask;
+    if (task.m_isLValue)
+    {
+      if (!task.m_isOnlyPhi && m_scope.hasSSADefinition(m_localIndex))
+      {
+        RenamingAgenda& remaingContinuations = (RenamingAgenda&) continuations;
+        task.m_localReplace = new LocalVariableExpression(*this);
+        m_localIndex = m_scope.addSSADeclaration(m_name, m_localIndex, remaingContinuations.m_ident);
+      }
+      task.m_localRename = this;
+    }
+    else // !rtTask.m_isLValue
+    {
+      RenamingTask::VariableRenaming locate(*this, task.m_function);
+      std::set<RenamingTask::VariableRenaming>::iterator found = task.m_renamings.find(locate);
+      if (found != task.m_renamings.end())
+      {
+        m_localIndex = found->getNewValue().m_localIndex;
+        m_name = found->getNewValue().m_name;
+      }
+    }
+  }
 }
 
 void
@@ -401,6 +426,14 @@ void LabelInstruction::handle(VirtualTask& vtTask, WorkList& continuations, Reus
     return;
   }
   VirtualInstruction::handle(vtTask, continuations, reuse);
+}
+
+void
+ReturnInstruction::handle(VirtualTask& task, WorkList& continuations, Reusability& reuse) {
+  int type = task.getType();
+  if ((type == TTRenaming) && m_result.get())
+  m_result->handle(task, continuations, reuse);
+  VirtualInstruction::handle(task, continuations, reuse);
 }
 
 void
