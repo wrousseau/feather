@@ -702,7 +702,7 @@ private:
 
 public:
   ExpressionInstruction() { setType(TExpression); }
-
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   ExpressionInstruction& setExpression(VirtualExpression* expression) { m_expression.reset(expression); return *this; }
   virtual void print(std::ostream& out) const
   {  m_expression->print(out);
