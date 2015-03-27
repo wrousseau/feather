@@ -449,5 +449,8 @@ int main( int argc, char** argv ) {
   program.computeDominationFrontiers();
   program.printWithWorkList(std::cout);
   std::cout << std::endl;
+  program.insertPhiFunctions();
+  program.printWithWorkList(std::cout);
+  std::cout << std::endl;
   return 0;
 }
