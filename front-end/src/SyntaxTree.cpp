@@ -414,6 +414,44 @@ void ExpressionInstruction::handle(VirtualTask& vtTask, WorkList& continuations,
   VirtualInstruction::handle(vtTask, continuations, reuse);
 }
 
+void IfInstruction::handle(VirtualTask& vtTask, WorkList& continuations, Reusability& reuse)
+{
+  int type = vtTask.getType();
+  if (type == TTRenaming)
+  {
+    if (m_expression.get())
+    {
+      m_expression->handle(vtTask, continuations, reuse);
+    }
+    assert(dynamic_cast<const RenamingTask*>(&vtTask));
+    RenamingTask& task = (RenamingTask&) vtTask;
+    std::set<RenamingTask::VariableRenaming>::iterator iter = task.m_renamings.begin();
+    while (iter != task.m_renamings.end())
+    {
+      if (!const_cast<RenamingTask::VariableRenaming&>(*iter).setDominator(*this))
+      {
+        std::set<RenamingTask::VariableRenaming>::iterator nextIter(iter);
+        ++nextIter;
+        const RenamingTask::VariableRenaming* next = (nextIter != task.m_renamings.end()) ? &(*nextIter) : NULL;
+        task.m_renamings.erase(iter);
+        if (next)
+        {
+          iter = task.m_renamings.find(*next);
+        }
+        else
+        {
+          iter = task.m_renamings.end();
+        }
+      }
+      else
+      {
+        ++iter;
+      }
+    }
+  }
+  VirtualInstruction::handle(vtTask, continuations, reuse);
+}
+
 void GotoInstruction::handle(VirtualTask& vtTask, WorkList& continutations, Reusability& reuse)
 {
   int type = vtTask.getType();
