@@ -418,6 +418,15 @@ void Program::computeDominationFrontiers()
   }
 }
 
+void Program::insertPhiFunctions()
+{
+  for (std::set<Function>::const_iterator functionIter = m_functions.begin();  functionIter != m_functions.end(); ++functionIter)
+  {
+    PhiInsertionAgenda phiInsertionAgenda(*functionIter);
+    phiInsertionAgenda.execute();
+  }
+}
+
 extern int yydebug;
 
 int main( int argc, char** argv ) {
