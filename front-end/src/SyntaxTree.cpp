@@ -505,6 +505,7 @@ void Program::insertPhiFunctions()
       labelPhiFrontierAgenda.propagate(**labelIter);
       labelPhiFrontierAgenda.execute();
     }
+    const_cast<Function&>(*functionIter).insertPhiFunctions(phiInsertionAgenda.labels());
   }
 }
 
