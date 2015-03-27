@@ -429,6 +429,12 @@ void Program::insertPhiFunctions()
   {
     PhiInsertionAgenda phiInsertionAgenda(*functionIter);
     phiInsertionAgenda.execute();
+    for (std::vector<LabelInstruction*>::const_iterator labelIter = phiInsertionAgenda.labels().begin(); labelIter != phiInsertionAgenda.labels().end(); ++labelIter)
+    {
+      LabelPhiFrontierAgenda labelPhiFrontierAgenda;
+      labelPhiFrontierAgenda.propagate(**labelIter);
+      labelPhiFrontierAgenda.execute();
+    }
   }
 }
 
