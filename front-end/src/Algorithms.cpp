@@ -66,3 +66,23 @@ VirtualInstruction* DominationTask::findDominatorWith(VirtualInstruction& source
   }
   return thisInstruction;
 }
+
+bool PhiInsertionTask::IsBefore::operator()(VirtualExpression* fst, VirtualExpression *snd) const
+{
+  if (fst->type() == snd->type())
+  {
+    if (fst->type() == VirtualExpression::TLocalVariable)
+    {
+      assert(dynamic_cast<const LocalVariableExpression*>(fst) && dynamic_cast<const LocalVariableExpression*>(snd));
+      return ((const LocalVariableExpression&) *fst).getGlobalIndex() < ((const LocalVariableExpression&) *snd).getGlobalIndex();
+    }
+    if (fst->type() == VirtualExpression::TParameter)
+    {
+      assert(dynamic_cast<const ParameterExpression*>(fst) && dynamic_cast<const ParameterExpression*>(snd));
+      return ((const ParameterExpression&) *fst).getIndex() < ((const ParameterExpression&) *snd).getIndex();
+    }
+    assert(dynamic_cast<const GlobalVariableExpression*>(fst) && dynamic_cast<const GlobalVariableExpression*>(snd));
+    return ((const GlobalVariableExpression&) *fst).getIndex() < ((const GlobalVariableExpression&) *snd).getIndex();
+  }
+  return fst->type() > snd->type();
+}

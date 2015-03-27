@@ -3,7 +3,7 @@
 
 #include "SyntaxTree.h"
 
-enum TypeTask { TTUndefined, TTPrint, TTDomination };
+enum TypeTask { TTUndefined, TTPrint, TTDomination, TTPhiInsertion };
 
 class PrintTask : public VirtualTask {
 public:
@@ -98,6 +98,135 @@ public:
   virtual void markInstructionWith(VirtualInstruction& instruction, VirtualTask& task)
   {
 
+  }
+};
+
+class PhiInsertionTask : public VirtualTask
+{
+public:
+  class IsBefore
+  {
+  public:
+    bool operator()(VirtualExpression* fst, VirtualExpression *snd) const;
+  };
+
+public:
+  std::vector<GotoInstruction*>* m_dominationFrontier;
+  Scope m_scope;
+  std::set<VirtualExpression*, IsBefore> m_modified;
+  bool m_isLValue;
+  typedef std::set<VirtualExpression*, IsBefore> ModifiedVariables;
+  class LabelResult
+  {
+  private:
+    typedef std::map<VirtualExpression*, std::pair<GotoInstruction*, GotoInstruction*>, PhiInsertionTask::IsBefore> Map;
+    Map m_map;
+    bool m_hasMark;
+    Scope m_scope;
+    ModifiedVariables m_variablesToAdd;
+  public:
+    LabelResult() : m_hasMark(false)
+    {
+
+    }
+    void setMark()
+    {
+      m_hasMark = true;
+    }
+    void setScope(const Scope& scope)
+    {
+      m_scope = scope;
+    }
+    LocalVariableExpression getAfterScopeLocalVariable() const
+    {
+      return LocalVariableExpression(std::string(), m_scope.count(), m_scope);
+    }
+    Map& map()
+    {
+      return m_map;
+    }
+    bool hasMark() const
+    {
+      return m_hasMark;
+    }
+    const ModifiedVariables& variablesToAdd() const
+    {
+      return m_variablesToAdd;
+    }
+    ModifiedVariables& variablesToAdd()
+    {
+      return m_variablesToAdd;
+    }
+    typedef Map::iterator iterator;
+  };
+
+public:
+  PhiInsertionTask(const Function& function) : m_dominationFrontier(NULL), m_scope(function.globalScope()), m_isLValue(false)
+  {
+    setInstruction(function.getFirstInstruction());
+  }
+  PhiInsertionTask(GotoInstruction& gotoInstruction, const PhiInsertionTask& source) : m_dominationFrontier(&gotoInstruction.getDominationFrontier()), m_scope(source.m_scope), m_isLValue(false)
+  {
+    setInstruction(gotoInstruction);
+  }
+  PhiInsertionTask(const PhiInsertionTask& source): VirtualTask(source), m_scope(source.m_scope), m_modified(source.m_modified), m_isLValue(false)
+  {
+
+  }
+  virtual VirtualTask* clone() const
+  {
+    return new PhiInsertionTask(*this);
+  }
+  virtual int getType() const
+  {
+    return TTPhiInsertion;
+  }
+};
+
+class PhiInsertionAgenda : public WorkList
+{
+private:
+  std::vector<LabelInstruction*> m_labels;
+public:
+  PhiInsertionAgenda(const Function& function)
+  {
+    addNewAsFirst(new PhiInsertionTask(function));
+  }
+  virtual ~PhiInsertionAgenda()
+  {
+    for (std::vector<LabelInstruction*>::iterator labelIter = m_labels.begin(); labelIter != m_labels.end(); ++labelIter)
+    {
+      if ((*labelIter)->mark)
+      {
+        delete (PhiInsertionTask::LabelResult*) (*labelIter)->mark;
+        (*labelIter)->mark = NULL;
+      }
+    }
+    m_labels.clear();
+  }
+  const std::vector<LabelInstruction*>& labels() const
+  {
+    return m_labels;
+  }
+  virtual void markInstructionWith(VirtualInstruction& instruction, VirtualTask&  vtTask)
+  {
+    if (instruction.type() == VirtualInstruction::TLabel)
+    {
+      assert(dynamic_cast<const PhiInsertionTask*>(&vtTask));
+      const PhiInsertionTask& task = (const PhiInsertionTask&) vtTask;
+      if (instruction.mark == NULL)
+      {
+        assert(dynamic_cast<const LabelInstruction*>(&instruction));
+        instruction.mark = new PhiInsertionTask::LabelResult();
+      }
+      PhiInsertionTask::LabelResult& result = *((PhiInsertionTask::LabelResult*) instruction.mark);
+      if (!result.hasMark())
+      {
+        m_labels.push_back((LabelInstruction*) &instruction);
+        result.setMark();
+        result.setScope(task.m_scope);
+      }
+    }
   }
 };
 
