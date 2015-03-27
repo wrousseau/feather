@@ -614,6 +614,59 @@ void LabelInstruction::handle(VirtualTask& vtTask, WorkList& continuations, Reus
     ((LabelPhiFrontierAgenda&) continuations).propagateOn(*this, ((LabelPhiFrontierTask&) vtTask).m_modified);
     return;
   }
+  else if (type == TTRenaming)
+  {
+    assert(dynamic_cast<const RenamingTask*>(&vtTask));
+    RenamingTask& task = (RenamingTask&) vtTask;
+    if (task.m_previousLabel)
+    {
+      bool isLast = true;
+      if (getSNextInstruction() && getSNextInstruction()->type() == TExpression)
+      {
+        assert(dynamic_cast<const ExpressionInstruction*>(getSNextInstruction()));
+        if (((const ExpressionInstruction&) *getSNextInstruction()).isPhi())
+        {
+          isLast = false;
+          if (task.m_isOnlyPhi)
+          {
+            VirtualInstruction::handle(vtTask, continuations, reuse);
+          }
+        }
+      }
+      if (isLast)
+      {
+        assert(m_dominator);
+        std::set<RenamingTask::VariableRenaming>::iterator iter = task.m_renamings.begin();
+        while (iter != task.m_renamings.end())
+        {
+          if (!const_cast<RenamingTask::VariableRenaming&>(*iter).setDominator(*m_dominator))
+          {
+            std::set<RenamingTask::VariableRenaming>::iterator nextIter(iter);
+            ++nextIter;
+            const RenamingTask::VariableRenaming* next = (nextIter != task.m_renamings.end()) ? &(*nextIter) : NULL;
+            task.m_renamings.erase(iter);
+            if (next)
+            {
+              iter = task.m_renamings.find(*next);
+            }
+            else
+            {
+              iter = task.m_renamings.end();
+            }
+          }
+          else
+          {
+            ++iter;
+          }
+        }
+        task.m_previousLabel = NULL;
+      }
+      if (task.m_isOnlyPhi)
+      {
+        return;
+      }
+    }
+  }
   VirtualInstruction::handle(vtTask, continuations, reuse);
 }
 
