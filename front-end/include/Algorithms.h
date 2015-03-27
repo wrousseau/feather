@@ -3,7 +3,7 @@
 
 #include "SyntaxTree.h"
 
-enum TypeTask { TTUndefined, TTPrint, TTDomination, TTPhiInsertion };
+enum TypeTask { TTUndefined, TTPrint, TTDomination, TTPhiInsertion, TTLabelPhiFrontier };
 
 class PrintTask : public VirtualTask {
 public:
@@ -229,6 +229,47 @@ public:
       }
     }
   }
+};
+
+class LabelPhiFrontierTask : public VirtualTask
+{
+public:
+  typedef PhiInsertionTask::IsBefore IsBefore;
+  std::set<VirtualExpression*, IsBefore> m_modified;
+
+public:
+  LabelPhiFrontierTask(const LabelInstruction& label, std::set<VirtualExpression*, IsBefore>& modified)
+  {
+    setInstruction(label);
+    m_modified.swap(modified);
+  }
+  LabelPhiFrontierTask(const LabelPhiFrontierTask& source) : VirtualTask(source)
+  {
+
+  }
+
+  virtual VirtualTask* clone() const
+  {
+    return new LabelPhiFrontierTask(*this);
+  }
+  virtual int getType() const
+  {
+    return TTLabelPhiFrontier;
+  }
+};
+
+class LabelPhiFrontierAgenda : public WorkList
+{
+public:
+  LabelPhiFrontierAgenda()
+  {
+
+  }
+
+  typedef PhiInsertionTask::IsBefore IsBefore;
+  typedef PhiInsertionTask::LabelResult LabelResult;
+  void propagate(const LabelInstruction& label);
+  void propagateOn(const LabelInstruction& label, const std::set<VirtualExpression*, IsBefore>& originModified);
 };
 
 inline void
