@@ -309,12 +309,22 @@ EnterBlockInstruction::handle(VirtualTask& virtualTask, WorkList& continuations,
 
 void
 ExitBlockInstruction::handle(VirtualTask& virtualTask, WorkList& continuations, Reusability& reuse) {
-  if (virtualTask.getType() == TTPrint) {
+  int type = virtualTask.getType();
+  if (type == TTPrint) {
     assert(dynamic_cast<const PrintTask*>(&virtualTask));
     PrintTask& task = (PrintTask&) virtualTask;
     assert(task.m_ident > 0);
     task.m_ident--;
-  };
+  }
+  else if (type == TTPhiInsertion)
+  {
+    assert(dynamic_cast<const PhiInsertionTask*>(&virtualTask));
+    PhiInsertionTask& task = (PhiInsertionTask&) virtualTask;
+    LocalVariableExpression lastExpr(std::string(), 0, task.m_scope);
+    task.m_scope.pop();
+    PhiInsertionTask::ModifiedVariables::iterator last = task.m_modified.upper_bound(&lastExpr);
+    task.m_modified.erase(last, task.m_modified.end());
+  }
   VirtualInstruction::handle(virtualTask, continuations, reuse);
 }
 
