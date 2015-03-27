@@ -125,6 +125,70 @@ void LocalVariableExpression::handle(VirtualTask &vtTask, WorkList& continuation
   }
 }
 
+void
+ComparisonExpression::handle(VirtualTask& task, WorkList& continuations, Reusability& reuse) {
+  int type = task.getType();
+  if (type == TTRenaming) {
+    if (m_fst.get())
+    m_fst->handle(task, continuations, reuse);
+    if (m_snd.get())
+    m_snd->handle(task, continuations, reuse);
+  };
+}
+void
+UnaryOperatorExpression::handle(VirtualTask& task, WorkList& continuations, Reusability& reuse) {
+  int type = task.getType();
+  if (type == TTRenaming) {
+    if (m_subExpression.get())
+    m_subExpression->handle(task, continuations, reuse);
+  };
+}
+void
+BinaryOperatorExpression::handle(VirtualTask& task, WorkList& continuations, Reusability& reuse) {
+  int type = task.getType();
+  if (type == TTRenaming) {
+    if (m_fst.get())
+    m_fst->handle(task, continuations, reuse);
+    if (m_snd.get())
+    m_snd->handle(task, continuations, reuse);
+  };
+}
+void
+DereferenceExpression::handle(VirtualTask& task, WorkList& continuations, Reusability& reuse) {
+  int type = task.getType();
+  if (type == TTRenaming) {
+    if (m_subExpression.get())
+    m_subExpression->handle(task, continuations, reuse);
+  };
+}
+void
+ReferenceExpression::handle(VirtualTask& task, WorkList& continuations, Reusability& reuse) {
+  int type = task.getType();
+  if (type == TTRenaming) {
+    if (m_subExpression.get())
+    m_subExpression->handle(task, continuations, reuse);
+  };
+}
+void
+CastExpression::handle(VirtualTask& task, WorkList& continuations, Reusability& reuse) {
+  int type = task.getType();
+  if (type == TTRenaming) {
+    if (m_subExpression.get())
+    m_subExpression->handle(task, continuations, reuse);
+  };
+}
+void
+FunctionCallExpression::handle(VirtualTask& task, WorkList& continuations, Reusability& reuse) {
+  int type = task.getType();
+  if (type == TTRenaming) {
+    for (std::vector<VirtualExpression*>::const_iterator iter = m_arguments.begin();
+    iter != m_arguments.end(); ++iter) {
+      if (*iter)
+      (*iter)->handle(task, continuations, reuse);
+    };
+  };
+}
+
 void AssignExpression::handle(VirtualTask& vtTask, WorkList& continuations, Reusability& reuse)
 {
   int type = vtTask.getType();
@@ -423,15 +487,15 @@ void Function::setDominationFrontier()
           if (notDominator->getSPreviousInstruction() && notDominator->getSPreviousInstruction()->type() == VirtualInstruction::TIf)
           {
             assert(dynamic_cast<const GotoInstruction*>(notDominator));
-      	    ((GotoInstruction&) *notDominator).addDominationFrontier( *origin);
-      	    notDominator = notDominator->getSPreviousInstruction();
+            ((GotoInstruction&) *notDominator).addDominationFrontier( *origin);
+            notDominator = notDominator->getSPreviousInstruction();
           }
           if (notDominator->type() == VirtualInstruction::TLabel)
           {
             assert(dynamic_cast<const LabelInstruction*>(notDominator));
-      	    LabelInstruction& labelInstruction = (LabelInstruction&) *notDominator;
-      	    labelInstruction.addDominationFrontier(*origin);
-      	    notDominator = labelInstruction.m_dominator ;
+            LabelInstruction& labelInstruction = (LabelInstruction&) *notDominator;
+            labelInstruction.addDominationFrontier(*origin);
+            notDominator = labelInstruction.m_dominator ;
           }
         }
       }
