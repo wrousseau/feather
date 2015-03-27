@@ -766,16 +766,17 @@ public:
     return m_dominationFrontier;
   }
   virtual void print(std::ostream& out) const
-  {  if (m_context == CLoop)
-    out << "goto loop " << getSNextInstruction();
+  {
+    if (m_context == CLoop)
+      out << "goto loop " << getSNextInstruction();
     else if (m_context == CAfterIfThen)
-    out << "then";
+      out << "then";
     else if (m_context == CAfterIfElse)
-    out << "else";
+      out << "else";
     else if (m_context == CBeforeLabel)
-    out << "goto label " << getSNextInstruction();
+      out << "goto label " << getSNextInstruction();
     else
-    out << "goto " << std::hex << getSNextInstruction() << std::dec;
+      out << "goto " << std::hex << getSNextInstruction() << std::dec;
     if (!m_dominationFrontier.empty())
     {
       out << "\tdomination fronter = ";
@@ -1084,6 +1085,7 @@ public:
   }
   void printWithWorkList(std::ostream& out) const;
   void computeDominators();
+  void computeDominationFrontiers();
   class ParseContext {
   private:
     friend int getTokenIdentifier(const char* szText);

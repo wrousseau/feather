@@ -183,15 +183,14 @@ void Function::setDominationFrontier()
         GotoInstruction* origin = (GotoInstruction*) notDominator;
         while (label.m_dominator != notDominator)
         {
-          while (notDominator->type() != VirtualInstruction::TLabel)
+          while (notDominator->type() != VirtualInstruction::TLabel && notDominator->getSPreviousInstruction() && notDominator->getSPreviousInstruction()->type() != VirtualInstruction::TIf)
           {
             notDominator = notDominator->getSPreviousInstruction();
           }
           if (notDominator->getSPreviousInstruction() && notDominator->getSPreviousInstruction()->type() == VirtualInstruction::TIf)
           {
             assert(dynamic_cast<const GotoInstruction*>(notDominator));
-            GotoInstruction& gotoInstruction = (GotoInstruction&) *notDominator;
-            gotoInstruction.addDominationFrontier(*origin);
+      	    ((GotoInstruction&) *notDominator).addDominationFrontier( *origin);
       	    notDominator = notDominator->getSPreviousInstruction();
           }
           if (notDominator->type() == VirtualInstruction::TLabel)
@@ -227,6 +226,14 @@ void Program::computeDominators()
   }
 }
 
+void Program::computeDominationFrontiers()
+{
+  for (std::set<Function>::iterator functionIter = m_functions.begin(); functionIter != m_functions.end(); ++functionIter)
+  {
+    const_cast<Function&>(*functionIter).setDominationFrontier();
+  }
+}
+
 extern int yydebug;
 
 int main( int argc, char** argv ) {
@@ -244,6 +251,9 @@ int main( int argc, char** argv ) {
   program.printWithWorkList(std::cout);
   std::cout << std::endl;
   program.computeDominators();
+  program.printWithWorkList(std::cout);
+  std::cout << std::endl;
+  program.computeDominationFrontiers();
   program.printWithWorkList(std::cout);
   std::cout << std::endl;
   return 0;
