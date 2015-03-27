@@ -294,8 +294,23 @@ protected:
   void setType(Type typeSource) { assert(m_type == TUndefined); m_type = typeSource; }
 
 public:
-  VirtualExpression() : m_type(TUndefined) {}
-  virtual ~VirtualExpression() {}
+  VirtualExpression() : m_type(TUndefined)
+  {
+
+  }
+  VirtualExpression(const VirtualExpression& source) : m_type(source.m_type)
+  {
+
+  }
+  virtual ~VirtualExpression()
+  {
+
+  }
+  virtual VirtualExpression* clone() const
+  {
+    assert(false);
+    return NULL;
+  }
   Type type() const { return m_type; }
   virtual void print(std::ostream& out) const = 0;
   virtual std::auto_ptr<VirtualType> newType(Function* function) const = 0;
@@ -350,9 +365,18 @@ private:
 public:
   LocalVariableExpression(const std::string& name, int localIndex, Scope scope)
   :  m_scope(scope), m_name(name), m_localIndex(localIndex)
-  {  setType(TLocalVariable); }
-  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability &reuse);
+  {
+    setType(TLocalVariable);
+  }
+  LocalVariableExpression(const LocalVariableExpression& source) : VirtualExpression(source), m_scope(source.m_scope), m_name(source.m_name), m_localIndex(source.m_localIndex)
+  {
 
+  }
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability &reuse);
+  virtual VirtualExpression* clone() const
+  {
+    return new LocalVariableExpression(*this);
+  }
   virtual void print(std::ostream& out) const { out << "[local " << m_localIndex << ": " << m_name << ']'; }
   int getLocalScope() const { return m_localIndex; }
   int getFunctionIndex(Function& function) const;
@@ -367,9 +391,18 @@ private:
   int m_localIndex;
 
 public:
-  ParameterExpression(const std::string& name, int localIndex)
-  :  m_name(name), m_localIndex(localIndex) { setType(TParameter); }
+  ParameterExpression(const std::string& name, int localIndex) : m_name(name), m_localIndex(localIndex)
+  {
+    setType(TParameter);
+  }
+  ParameterExpression(const ParameterExpression& source) : VirtualExpression(source), m_name(source.m_name), m_localIndex(source.m_localIndex)
+  {
 
+  }
+  virtual VirtualExpression* clone() const
+  {
+    return new ParameterExpression(*this);
+  }
   int getIndex() const { return m_localIndex; }
   virtual void print(std::ostream& out) const { out << "[parameter " << m_localIndex << ": " << m_name << ']'; }
   virtual std::auto_ptr<VirtualType> newType(Function* function) const;
@@ -383,7 +416,14 @@ private:
 public:
   GlobalVariableExpression(const std::string& name, int localIndex)
   :  m_name(name), m_localIndex(localIndex) { setType(TGlobalVariable); }
+  GlobalVariableExpression(const GlobalVariableExpression& source) : VirtualExpression(source), m_name(source.m_name), m_localIndex(source.m_localIndex)
+  {
 
+  }
+  virtual VirtualExpression* clone() const
+  {
+    return new GlobalVariableExpression(*this);
+  }
   const int getIndex() const { return m_localIndex; }
   virtual void print(std::ostream& out) const { out << "[global " << m_localIndex << ": " << m_name << ']'; }
   virtual std::auto_ptr<VirtualType> newType(Function* function) const;
