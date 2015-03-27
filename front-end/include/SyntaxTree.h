@@ -483,7 +483,7 @@ public:
     {  assert(m_operator == OUndefined); m_operator = operatorSource; return *this; }
     ComparisonExpression& setFst(VirtualExpression* fst) { m_fst.reset(fst); return *this; }
     ComparisonExpression& setSnd(VirtualExpression* snd) { m_snd.reset(snd); return *this; }
-
+    virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
     virtual void print(std::ostream& out) const
     {  out << '(';
     if (m_fst.get())
@@ -524,7 +524,7 @@ public:
   {  assert(m_operator == OUndefined); m_operator = operatorSource; return *this; }
   UnaryOperatorExpression& setSubExpression(VirtualExpression* subExpression)
   {  m_subExpression.reset(subExpression); return *this; }
-
+  virtual void handle(VirtualTask &task, WorkList& continuations, Reusability& reuse);
   virtual void print(std::ostream& out) const
   {  if (m_operator == OUndefined)
     out << "no-op";
@@ -553,7 +553,7 @@ public:
   {  assert(m_operator == OUndefined); m_operator = operatorSource; return *this; }
   BinaryOperatorExpression& setFst(VirtualExpression* fst) { m_fst.reset(fst); return *this; }
   BinaryOperatorExpression& setSnd(VirtualExpression* snd) { m_snd.reset(snd); return *this; }
-
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   virtual void print(std::ostream& out) const
   {  out << '(';
   if (m_fst.get())
@@ -586,6 +586,7 @@ public:
 
   DereferenceExpression& setSubExpression(VirtualExpression* subExpression)
   {  m_subExpression.reset(subExpression); return *this; }
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   virtual void print(std::ostream& out) const
   {  out << '*';
   if (m_subExpression.get())
@@ -609,6 +610,7 @@ public:
 
   ReferenceExpression& setSubExpression(VirtualExpression* subExpression)
   {  m_subExpression.reset(subExpression); return *this; }
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   virtual void print(std::ostream& out) const
   {  out << '&';
   if (m_subExpression.get())
@@ -632,6 +634,7 @@ public:
 
   CastExpression& setSubExpression(VirtualExpression* subExpression)
   {  m_subExpression.reset(subExpression); return *this; }
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   CastExpression& setType(VirtualType* type) { m_type.reset(type); return *this; }
   virtual void print(std::ostream& out) const
   {  out << '(';
@@ -661,6 +664,7 @@ public:
     if (*iIter) delete (*iIter);
     m_arguments.clear();
   }
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   FunctionCallExpression& addArgument(VirtualExpression* argument)
   {  m_arguments.push_back(argument); return *this; }
   virtual void print(std::ostream& out) const;
