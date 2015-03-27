@@ -473,6 +473,30 @@ void GotoInstruction::handle(VirtualTask& vtTask, WorkList& continutations, Reus
       }
     }
   }
+  else if (type == TTRenaming)
+  {
+    assert(dynamic_cast<const RenamingTask*>(&vtTask));
+    RenamingTask& task = (RenamingTask&) vtTask;
+    if ((m_context == CAfterIfThen) || (m_context == CAfterIfElse))
+    {
+      task.m_lastBranch = this;
+    }
+    else if (m_context >= CLoop)
+    {
+      task.m_previousLabel = this;
+      if (getSNextInstruction()->mark)
+      {
+        task.m_isOnlyPhi = true;
+        if (getSNextInstruction())
+        {
+          task.clearInstruction();
+          task.setInstruction(*getSNextInstruction());
+          reuse.setReuse();
+        }
+        return;
+      }
+    }
+  }
   VirtualInstruction::handle(vtTask, continutations, reuse);
 }
 
