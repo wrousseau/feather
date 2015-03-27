@@ -804,6 +804,7 @@ public:
   LabelInstruction() : m_goto(NULL), m_dominator(NULL) { setType(TLabel); }
 
   virtual int countPreviouses() const { return VirtualInstruction::countPreviouses() + (m_goto ? 1 : 0); }
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   VirtualInstruction* getSDominator() const { return m_dominator; }
   void setGotoFrom(GotoInstruction& gotoPoint) { assert(!m_goto); m_goto = &gotoPoint; }
   virtual void print(std::ostream& out) const
