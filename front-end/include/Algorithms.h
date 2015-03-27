@@ -124,6 +124,7 @@ public:
     bool m_hasMark;
     Scope m_scope;
     ModifiedVariables m_variablesToAdd;
+
   public:
     LabelResult() : m_hasMark(false)
     {

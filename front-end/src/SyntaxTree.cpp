@@ -178,6 +178,81 @@ void GotoInstruction::handle(VirtualTask& vtTask, WorkList& continutations, Reus
   VirtualInstruction::handle(vtTask, continutations, reuse);
 }
 
+bool GotoInstruction::propagateOnUnmarked(VirtualTask& vtTask, WorkList& continuations, Reusability& reuse) const
+{
+  if (m_context >= CLoop && (vtTask.getType() == TTPhiInsertion))
+  {
+    if (getSNextInstruction() && getSNextInstruction()->type() == TLabel)
+    {
+      assert(dynamic_cast<const LabelInstruction*>(getSNextInstruction()));
+      LabelInstruction& label = (LabelInstruction&) *getSNextInstruction();
+      assert(dynamic_cast<const PhiInsertionTask*>(&vtTask));
+      PhiInsertionTask &task = (PhiInsertionTask&) vtTask;
+      if (!label.mark)
+      {
+        label.mark = new PhiInsertionTask::LabelResult();
+      }
+      bool hasFoundFrontier = false;
+      if (task.m_dominationFrontier)
+      {
+        for (std::vector<GotoInstruction*>::const_iterator labelIter = task.m_dominationFrontier->begin(); labelIter != task.m_dominationFrontier->end(); ++labelIter)
+        {
+          if ((*labelIter)->getSNextInstruction() == &label)
+          {
+            PhiInsertionTask::LabelResult& result = *((PhiInsertionTask::LabelResult*) label.mark);
+            LocalVariableExpression afterLast(std::string(), task.m_scope.count(), task.m_scope);
+            for (PhiInsertionTask::ModifiedVariables::iterator iter = task.m_modified.begin(); iter != task.m_modified.end(); ++iter)
+            {
+              if (PhiInsertionTask::IsBefore().operator()(*iter, &afterLast))
+              {
+                PhiInsertionTask::LabelResult::iterator found = result.map().find(*iter);
+                if (found != result.map().end())
+                {
+                  if (found->second.first == NULL)
+                  {
+                    found->second.first = *labelIter;
+                  }
+                  else if (found->second.second == NULL)
+                  {
+                    found->second.second = *labelIter;
+                  }
+                  else
+                  {
+                    assert(false);
+                  }
+                }
+              }
+            }
+            hasFoundFrontier = true;
+          }
+        }
+      }
+      if (!((PhiInsertionTask::LabelResult*) label.mark)->hasMark())
+      {
+        task.clearInstruction();
+        task.setInstruction(*getSNextInstruction());
+        reuse.setReuse();
+      }
+      if (hasFoundFrontier)
+      {
+        // TODO
+        //task.m_modified = ((PhiInsertionTask::LabelResult*) label.mark)->map().keys();
+      }
+      else if (label.mark)
+      {
+        PhiInsertionTask::LabelResult& result = *(PhiInsertionTask::LabelResult*) label.mark;
+        task.m_modified.insert(result.variablesToAdd().begin(), result.variablesToAdd().end());
+      }
+      return true;
+    }
+  }
+  if ((m_context >= CLoop) || !m_context)
+  {
+    reuse.setSorted();
+  }
+  return VirtualInstruction::propagateOnUnmarked(vtTask, continuations, reuse);
+}
+
 void
 VirtualInstruction::handle(VirtualTask& task, WorkList& continuations, Reusability& reuse) {
   task.applyOn(*this, continuations);
@@ -206,6 +281,11 @@ void LabelInstruction::handle(VirtualTask& vtTask, WorkList& continuations, Reus
       task.setHeight(newDominator->getDominationHeight()+1);
       m_dominator = newDominator;
     }
+  }
+  else if (type == TTPhiInsertion)
+  {
+    assert(dynamic_cast<const PhiInsertionTask*>(&vtTask));
+    ((PhiInsertionTask&) vtTask).m_dominationFrontier = &m_dominationFrontier;
   }
   VirtualInstruction::handle(vtTask, continuations, reuse);
 }
