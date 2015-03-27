@@ -75,6 +75,43 @@ WorkList::addNewSorted(VirtualTask* virtualTask) {
   m_tasks.push_back(virtualTask);
 }
 
+void LocalVariableExpression::handle(VirtualTask &vtTask, WorkList& continuations, Reusability& reuse)
+{
+  int type = vtTask.getType();
+  if (type == TTPhiInsertion)
+  {
+    assert(dynamic_cast<const PhiInsertionTask*>(&vtTask));
+    PhiInsertionTask& task = (PhiInsertionTask&) vtTask;
+    if (task.m_isLValue)
+    {
+      if (task.m_modified.find(this) == task.m_modified.end())
+      {
+        task.m_modified.insert(this);
+      }
+      if (task.m_dominationFrontier)
+      {
+        for (std::vector<GotoInstruction*>::const_iterator labelIter = task.m_dominationFrontier->begin(); labelIter != task.m_dominationFrontier->end(); ++labelIter)
+        {
+          LabelInstruction& label = (LabelInstruction&) *((*labelIter)->getSNextInstruction());
+          if (!label.mark)
+          {
+            label.mark = new PhiInsertionTask::LabelResult();
+          }
+          PhiInsertionTask::LabelResult& result = *((PhiInsertionTask::LabelResult*) label.mark);
+          if (result.map().find(this) == result.map().end())
+          {
+            std::pair<VirtualExpression*, std::pair<GotoInstruction*, GotoInstruction*> > insert;
+            insert.first = this;
+            insert.second.first = NULL;
+            insert.second.second = NULL;
+            result.map().insert(insert);
+          }
+        }
+      }
+    }
+  }
+}
+
 void
 FunctionCallExpression::print(std::ostream& out) const {
   if (m_function)

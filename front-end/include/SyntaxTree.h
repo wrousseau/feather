@@ -351,6 +351,7 @@ public:
   LocalVariableExpression(const std::string& name, int localIndex, Scope scope)
   :  m_scope(scope), m_name(name), m_localIndex(localIndex)
   {  setType(TLocalVariable); }
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability &reuse);
 
   virtual void print(std::ostream& out) const { out << "[local " << m_localIndex << ": " << m_name << ']'; }
   int getLocalScope() const { return m_localIndex; }
