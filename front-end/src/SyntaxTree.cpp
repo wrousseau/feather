@@ -155,6 +155,15 @@ Program::printWithWorkList(std::ostream& out) const {
   };
 }
 
+void Program::computeDominators()
+{
+  for (std::set<Function>::const_iterator functionIter = m_functions.begin(); functionIter != m_functions.end(); ++functionIter)
+  {
+    DominationAgenda agenda(*functionIter);
+    agenda.execute();
+  }
+}
+
 extern int yydebug;
 
 int main( int argc, char** argv ) {
@@ -169,6 +178,9 @@ int main( int argc, char** argv ) {
   std::cout << std::endl;
   program.print(std::cout);
   std::cout << std::endl;
+  program.printWithWorkList(std::cout);
+  std::cout << std::endl;
+  program.computeDominators();
   program.printWithWorkList(std::cout);
   std::cout << std::endl;
   return 0;

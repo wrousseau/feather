@@ -874,7 +874,7 @@ public:
 };
 
 /****************************/
-/* D�finition des fonctions */
+/* Définition des fonctions */
 /****************************/
 
 class Function;
@@ -1017,7 +1017,7 @@ FunctionCallExpression::newType(Function* callerFunction) const
 {  return std::auto_ptr<VirtualType>(m_function->signature().getResultType().clone()); }
 
 /*****************************/
-/* D�finition des programmes */
+/* Définition des programmes */
 /*****************************/
 
 int getTokenIdentifier(const char* szText);
@@ -1035,6 +1035,7 @@ public:
     functionIter->print(out);
   }
   void printWithWorkList(std::ostream& out) const;
+  void computeDominators();
   class ParseContext {
   private:
     friend int getTokenIdentifier(const char* szText);
