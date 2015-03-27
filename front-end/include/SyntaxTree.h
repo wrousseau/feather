@@ -775,7 +775,7 @@ public:
     else if (m_context == CBeforeLabel)
     out << "goto label " << getSNextInstruction();
     else
-    out << "goto " << std::hex << (int) getSNextInstruction() << std::dec;
+    out << "goto " << std::hex << getSNextInstruction() << std::dec;
     if (!m_dominationFrontier.empty())
     {
       out << "\tdomination fronter = ";
@@ -869,7 +869,7 @@ inline void
 GotoInstruction::connectToLabel(LabelInstruction& instruction)
 {  setNextTo(instruction); instruction.setGotoFrom(*this); }
 
-inline void GotoInstruction::addDominationFronter(GotoINstruction& gotoInstruction)
+inline void GotoInstruction::addDominationFrontier(GotoInstruction& gotoInstruction)
 {
   m_dominationFrontier.push_back(&gotoInstruction);
 }
