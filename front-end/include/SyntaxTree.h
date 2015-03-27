@@ -1013,6 +1013,7 @@ void addNewInstructionAfter(VirtualInstruction* newInstruction, VirtualInstructi
   m_instructions.push_back(newInstruction);
   previous.connectTo(*newInstruction);
 }
+void setDominationFrontier();
 void addFirstInstruction(VirtualInstruction* newInstruction)
 {  assert(m_instructions.empty());
   newInstruction->setRegistrationIndex(0);
