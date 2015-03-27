@@ -638,6 +638,14 @@ public:
 
   AssignExpression& setLValue(VirtualExpression* lvalue) { m_lvalue.reset(lvalue); return *this; }
   AssignExpression& setRValue(VirtualExpression* rvalue) { m_rvalue.reset(rvalue); return *this; }
+  const VirtualExpression& getLValue() const
+  {
+    return *m_lvalue;
+  }
+  const VirtualExpression& getRValue() const
+  {
+    return *m_rvalue;
+  }
   virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   virtual void print(std::ostream& out) const
   {  if (m_lvalue.get())
@@ -790,6 +798,10 @@ private:
 
 public:
   ExpressionInstruction() { setType(TExpression); }
+  bool isPhi() const
+  {
+    return (((AssignExpression&) *m_expression).getRValue().type() == VirtualExpression::TPhi) && (m_expression->type() == VirtualExpression::TAssign);
+  }
   virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   ExpressionInstruction& setExpression(VirtualExpression* expression) { m_expression.reset(expression); return *this; }
   virtual void print(std::ostream& out) const
