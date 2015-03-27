@@ -12,3 +12,10 @@ Installing the `feather` executable can be done by simply running the following 
     make
     
 ## Running
+
+The program can be tested will all three files already located in the exe directory. To run :
+    
+    cd exe
+    ./feather essai.c
+    ./feather essai2.c
+    ./feather essai3.c
