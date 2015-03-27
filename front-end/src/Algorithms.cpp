@@ -86,3 +86,101 @@ bool PhiInsertionTask::IsBefore::operator()(VirtualExpression* fst, VirtualExpre
   }
   return fst->type() > snd->type();
 }
+
+void LabelPhiFrontierAgenda::propagate(const LabelInstruction& label)
+{
+  assert(label.mark);
+  LabelResult& result = *(LabelResult*) label.mark;
+  for (std::vector<GotoInstruction*>::const_iterator frontierIter = label.getDominationFrontier().begin(); frontierIter != label.getDominationFrontier().end(); ++frontierIter)
+  {
+    std::set<VirtualExpression*, IsBefore> modified;
+    LabelResult& receiver = *(LabelResult*) (*frontierIter)->getSNextInstruction()->mark;
+    for (LabelResult::iterator exprIter = result.map().begin(); exprIter != result.map().end(); ++exprIter)
+    {
+      LocalVariableExpression afterScope = receiver.getAfterScopeLocalVariable();
+      if (IsBefore().operator()(exprIter->first, &afterScope))
+      {
+        LabelResult::iterator found = receiver.map().find(exprIter->first);
+        if (found == receiver.map().end())
+        {
+          std::pair<VirtualExpression*, std::pair<GotoInstruction*, GotoInstruction*> > insert;
+          insert.first = exprIter->first;
+          insert.second.first = *frontierIter;
+          insert.second.second = NULL;
+          found = receiver.map().insert(found, insert);
+          if (modified.find(exprIter->first) == modified.end())
+          {
+            modified.insert(exprIter->first);
+          }
+        }
+        else if ((found->second.first != *frontierIter) && (found->second.second != *frontierIter))
+        {
+          if (found->second.first == NULL)
+          {
+            found->second.first = *frontierIter;
+          }
+          else if (found->second.second == NULL)
+          {
+            found->second.second = *frontierIter;
+          }
+          else
+          {
+            assert(false);
+          }
+        }
+      }
+    }
+    if (!modified.empty())
+    {
+      addNewAsFirst(new LabelPhiFrontierTask(*(LabelInstruction*) (*frontierIter)->getSNextInstruction(), modified));
+    }
+  }
+}
+
+void LabelPhiFrontierAgenda::propagateOn(const LabelInstruction& label, const std::set<VirtualExpression*, IsBefore>& originModified)
+{
+  for (std::vector<GotoInstruction*>::const_iterator frontierIter = label.getDominationFrontier().begin(); frontierIter != label.getDominationFrontier().end(); ++frontierIter)
+  {
+    std::set<VirtualExpression*, IsBefore> modified;
+    LabelResult& receiver = *(LabelResult*) (*frontierIter)->getSNextInstruction()->mark;
+    for (std::set<VirtualExpression*, IsBefore>::iterator exprIter = originModified.begin(); exprIter != originModified.end(); ++exprIter)
+    {
+      LocalVariableExpression afterScope = receiver.getAfterScopeLocalVariable();
+      if (IsBefore().operator()(*exprIter, &afterScope))
+      {
+        LabelResult::iterator found = receiver.map().find(*exprIter);
+        if (found == receiver.map().end())
+        {
+          std::pair<VirtualExpression*, std::pair<GotoInstruction*, GotoInstruction*> > insert;
+          insert.first = *exprIter;
+          insert.second.first = *frontierIter;
+          insert.second.second = NULL;
+          found = receiver.map().insert(found, insert);
+          if (modified.find(*exprIter) == modified.end())
+          {
+            modified.insert(*exprIter);
+          }
+        }
+        else if ((found->second.first != *frontierIter) && (found->second.second != *frontierIter))
+        {
+          if (found->second.first == NULL)
+          {
+            found->second.first = *frontierIter;
+          }
+          else if (found->second.second == NULL)
+          {
+            found->second.second = *frontierIter;
+          }
+          else
+          {
+            assert(false);
+          }
+        }
+      }
+    }
+    if (!modified.empty())
+    {
+      addNewAsFirst(new LabelPhiFrontierTask(*(LabelInstruction*)(*frontierIter)->getSNextInstruction(), modified));
+    }
+  }
+}

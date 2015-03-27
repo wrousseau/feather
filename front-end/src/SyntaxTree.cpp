@@ -235,8 +235,7 @@ bool GotoInstruction::propagateOnUnmarked(VirtualTask& vtTask, WorkList& continu
       }
       if (hasFoundFrontier)
       {
-        // TODO
-        //task.m_modified = ((PhiInsertionTask::LabelResult*) label.mark)->map().keys();
+        task.m_modified = ((PhiInsertionTask::LabelResult*) label.mark)->variablesToAdd();
       }
       else if (label.mark)
       {
