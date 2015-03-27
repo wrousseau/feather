@@ -8,7 +8,7 @@ INC_PATH = include
 OBJ_PATH = obj
 EXE_PATH = exe
 
-FILE = SyntaxTree.cpp SimpleC_gram.cpp SimpleC_lex.cpp
+FILE = SyntaxTree.cpp Algorithms.cpp SimpleC_gram.cpp SimpleC_lex.cpp
 
 # -- Macros -------------
 CXX = g++
