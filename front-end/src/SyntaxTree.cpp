@@ -225,6 +225,15 @@ void AssignExpression::handle(VirtualTask& vtTask, WorkList& continuations, Reus
     m_lvalue->handle(task, continuations, reuse);
     task.m_isLValue = false;
   }
+  else if (type == TTRenaming)
+  {
+    assert(dynamic_cast<const RenamingTask*>(&vtTask));
+    RenamingTask& task = (RenamingTask&) vtTask;
+    task.m_isLValue = true;
+    m_lvalue->handle(task, continuations, reuse);
+    task.m_isLValue = false;
+    m_rvalue->handle(task, continuations, reuse);
+  }
 }
 
 void PhiExpression::print(std::ostream& out) const
