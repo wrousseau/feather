@@ -293,11 +293,18 @@ void LabelInstruction::handle(VirtualTask& vtTask, WorkList& continuations, Reus
 void
 EnterBlockInstruction::handle(VirtualTask& virtualTask, WorkList& continuations, Reusability& reuse) {
   VirtualInstruction::handle(virtualTask, continuations, reuse);
-  if (virtualTask.getType() == TTPrint) {
+  int type = virtualTask.getType();
+  if (type == TTPrint)
+  {
     assert(dynamic_cast<const PrintTask*>(&virtualTask));
     PrintTask& task = (PrintTask&) virtualTask;
     task.m_ident++;
-  };
+  }
+  else if (type == TTPhiInsertion)
+  {
+    assert(dynamic_cast<const PhiInsertionTask*>(&virtualTask));
+    ((PhiInsertionTask&) virtualTask).m_scope = m_scope;
+  }
 }
 
 void
