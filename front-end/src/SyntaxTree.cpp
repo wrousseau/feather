@@ -5,7 +5,20 @@
 extern Program::ParseContext parseContext;
 extern FILE *yyin;
 
+#include <sstream>
+
 int yyparse ();
+
+int SymbolTable::addSSADeclaration(std::string& name, int localIndex, int& ident)
+{
+  std::stringstream out;
+  out << name << '_' << ident;
+  ++ident;
+  m_localIndexes.insert(std::pair<std::string, int>(name = out.str(), m_types.size()));
+  m_types.push_back(m_types[localIndex]);
+  m_uniqueDefinitions.push_back(NULL);
+  return m_types.size()-1;
+}
 
 Scope::FindResult
 Scope::find(const std::string& name, int& local, Scope& scope) const {
