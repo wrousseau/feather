@@ -426,6 +426,45 @@ void Function::setDominationFrontier()
   }
 }
 
+void Function::insertPhiFunctions(const std::vector<LabelInstruction*>& labels)
+{
+  for (std::vector<LabelInstruction*>::const_iterator iter = labels.begin(); iter != labels.end(); ++iter)
+  {
+    LabelInstruction& label = **iter;
+    if (label.mark != NULL)
+    {
+      PhiInsertionTask::LabelResult* result = (PhiInsertionTask::LabelResult*) label.mark;
+      VirtualInstruction* previous = &label;
+      for (PhiInsertionTask::LabelResult::iterator labelIter = result->map().begin(); labelIter != result->map().end(); ++labelIter)
+      {
+        if (labelIter->second.first || labelIter->second.second)
+        {
+          ExpressionInstruction* assign = new ExpressionInstruction();
+          // Requires casting for the next instruction (first argument)
+          insertNewInstructionAfter((VirtualInstruction*) assign, *previous);
+          previous = assign;
+          AssignExpression* assignExpression = new AssignExpression();
+          assign->setExpression(assignExpression);
+          VirtualExpression* lvalue = labelIter->first->clone();
+          assignExpression->setLValue(lvalue);
+          PhiExpression* phi = new PhiExpression();
+          assignExpression->setRValue(phi);
+          if (labelIter->second.first)
+          {
+            phi->addReference(labelIter->first->clone(), *labelIter->second.first);
+          }
+          if (labelIter->second.second)
+          {
+            phi->addReference(labelIter->first->clone(), *labelIter->second.second);
+          }
+        }
+      }
+      delete result;
+      label.mark = NULL;
+    }
+  }
+}
+
 void
 Program::printWithWorkList(std::ostream& out) const {
   for (std::set<Function>::const_iterator functionIter = m_functions.begin();

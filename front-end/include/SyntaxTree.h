@@ -1124,6 +1124,7 @@ public:
     }
   }
   void setDominationFrontier();
+  void insertPhiFunctions(const std::vector<LabelInstruction*>& labels);
   void addFirstInstruction(VirtualInstruction* newInstruction)
   {  assert(m_instructions.empty());
     newInstruction->setRegistrationIndex(0);
