@@ -439,6 +439,37 @@ public:
   friend class RenamingAgenda;
 };
 
+class RenamingAgenda : public WorkList
+{
+public:
+  const Function* m_function;
+  std::list<LabelInstruction*> m_markedInstruction;
+  int m_ident;
+
+public:
+  RenamingAgenda(const Function& function) : m_function(&function), m_ident(1)
+  {
+    addNewAsFirst(new RenamingTask(function));
+  }
+  ~RenamingAgenda()
+  {
+    for (std::list<LabelInstruction*>::iterator iter = m_markedInstruction.begin(); iter != m_markedInstruction.end(); ++iter)
+    {
+      (*iter)->mark = NULL;
+    }
+    m_markedInstruction.clear();
+  }
+
+  virtual void markInstructionWith(VirtualInstruction& instruction, VirtualTask& task)
+  {
+    if ((instruction.type() == VirtualInstruction::TLabel) && !instruction.mark)
+    {
+      m_markedInstruction.push_back((LabelInstruction*) &instruction);
+      instruction.mark = (void*) 1;
+    }
+  }
+};
+
 inline void
 PrintTask::applyOn(VirtualInstruction& instruction, WorkList& continuations) {
   assert(dynamic_cast<const PrintAgenda*>(&continuations));
