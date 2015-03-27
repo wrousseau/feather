@@ -91,10 +91,12 @@ public:
 
 class Scope;
 class Function;
+class VirtualInstruction;
 class SymbolTable {
 private:
   std::map<std::string, int> m_localIndexes;
   std::vector<VirtualType*> m_types;
+  std::vector<VirtualInstruction*> m_uniqueDefinitions;
   std::shared_ptr<SymbolTable> m_parent;
 
 public:
@@ -113,6 +115,23 @@ public:
   bool contain(const std::string& name) const { return m_localIndexes.find(name) != m_localIndexes.end(); }
   int localIndex(const std::string& name) const { return m_localIndexes.find(name)->second; }
   const VirtualType& getType(int uIndex) const { return *m_types[uIndex]; }
+  void setSizeDefinitions()
+  {
+    m_uniqueDefinitions.reserve(m_types.size());
+    for (std::vector<VirtualType*>::const_iterator iter = m_types.begin(); iter != m_types.end(); ++iter)
+    {
+      m_uniqueDefinitions.push_back(NULL);
+    }
+  }
+  int addSSADeclaration(std::string& name, int localIndex, int& indent);
+  bool hasSSADefinition(int localIndex) const
+  {
+    return m_uniqueDefinitions[localIndex] != NULL;
+  }
+  void setSSADefinition(int localIndex, VirtualInstruction& instruction)
+  {
+    m_uniqueDefinitions[localIndex] = &instruction;
+  }
   friend class Scope;
   void printAsDeclarations(std::ostream& out) const
   {  for (std::map<std::string, int>::const_iterator iIter = m_localIndexes.begin();
@@ -143,6 +162,22 @@ public:
 
   void addDeclaration(const std::string& name, VirtualType* type)
   {  m_last->addDeclaration(name, type); }
+  void setSizeDefinitions()
+  {
+    m_last->setSizeDefinitions();
+  }
+  int addSSADeclaration(std::string& name, int localIndex, int& ident)
+  {
+    return m_last->addSSADeclaration(name, localIndex, ident);
+  }
+  bool hasSSADefinition(int localIndex) const
+  {
+    return m_last->hasSSADefinition(localIndex);
+  }
+  void setSSADefinition(int localIndex, VirtualInstruction& instruction)
+  {
+    m_last->setSSADefinition(localIndex, instruction);
+  }
   FindResult find(const std::string& name, int& local, Scope& scope) const;
   int getFunctionIndex(int local) const;
   void printAsDeclarations(std::ostream& out) const
