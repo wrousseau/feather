@@ -861,7 +861,7 @@ private:
 
 public:
   IfInstruction() { setType(TIf); }
-
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   virtual int countNexts() const { return VirtualInstruction::countNexts() + (m_then ? 1 : 0); }
   IfInstruction& setExpression(VirtualExpression* expression) { m_expression.reset(expression); return *this; }
   void connectToThen(GotoInstruction& gotoPoint);
@@ -1021,7 +1021,7 @@ private:
 
 public:
   ReturnInstruction() { setType(TReturn); }
-
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   ReturnInstruction& setResult(VirtualExpression* expression) { m_result.reset(expression); return *this; }
   virtual void print(std::ostream& out) const
   {  out << "return ";
