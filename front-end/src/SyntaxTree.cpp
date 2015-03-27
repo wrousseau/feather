@@ -258,6 +258,44 @@ void PhiExpression::print(std::ostream& out) const
   out << ')';
 }
 
+void PhiExpression::handle(VirtualTask& vtTask, WorkList& continuations, Reusability& reuse)
+{
+  int type = vtTask.getType();
+  if (type == TTRenaming)
+  {
+    assert(dynamic_cast<const RenamingTask*>(&vtTask));
+    RenamingTask& task = (RenamingTask&) vtTask;
+    assert(m_fst.get());
+    if (!m_snd.get())
+    {
+      m_snd.reset(m_fst->clone());
+    }
+    if (task.m_previousLabel == m_fstFrom)
+    {
+      m_fst->handle(task, continuations, reuse);
+    }
+    else if (!m_sndFrom)
+    {
+      m_sndFrom = task.m_previousLabel;
+      std::set<RenamingTask::VariableRenaming>::const_iterator found = task.m_renamings.find(RenamingTask::VariableRenaming(*m_fst, task.m_function));
+      LocalVariableExpression* newValue = NULL;
+      if (found != task.m_renamings.end())
+      {
+        newValue = found->getSDominatorNewValue();
+      }
+      if (newValue)
+      {
+        m_snd.reset(newValue->clone());
+      }
+    }
+    else
+    {
+      assert(task.m_previousLabel == m_sndFrom);
+      m_snd->handle(vtTask, continuations, reuse);
+    }
+  }
+}
+
 void
 FunctionCallExpression::print(std::ostream& out) const {
   if (m_function)

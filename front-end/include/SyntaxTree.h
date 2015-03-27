@@ -734,7 +734,7 @@ public:
     }
     return *this;
   }
-
+  virtual void handle(VirtualTask& task, WorkList& continuations, Reusability& reuse);
   virtual void print(std::ostream& out) const;
   virtual std::auto_ptr<VirtualType> newType(Function* function) const
   {
